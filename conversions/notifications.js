@@ -108,14 +108,18 @@ module.exports = (app, plugin) => {
           app.debug(`Assigning new alertId ${alertId} to ${update.path}`)
         }
 
-        //send delta with alert details
-        delta.updates[0].values[0].value.alertType = type
-        delta.updates[0].values[0].value.alertCategory = alertCategory
-        delta.updates[0].values[0].value.alertSystem = alertSystem
-        delta.updates[0].values[0].value.alertId = alertId
-        app.debug("New delta with alertId: " + JSON.stringify(delta))
+        //send delta with alert details only if not from the notifications API
+        //re-emitting API-raised notifications causes the server to overwrite
+        //canClear to false via syncFromNotificationUpdate()
+        if (delta.updates[0].$source !== 'notificationsApi') {
+          delta.updates[0].values[0].value.alertType = type
+          delta.updates[0].values[0].value.alertCategory = alertCategory
+          delta.updates[0].values[0].value.alertSystem = alertSystem
+          delta.updates[0].values[0].value.alertId = alertId
+          app.debug("New delta with alertId: " + JSON.stringify(delta))
 
-        app.handleMessage(plugin.id, delta)
+          app.handleMessage(plugin.id, delta)
+        }
       }
 
       try {
